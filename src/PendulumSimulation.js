@@ -89,6 +89,17 @@ function PendulumSimulation() {
       setMass(mass) {
         this.mass = mass;
       }
+
+      getEnergy() {
+        const height = this.length * (1 - Math.cos(this.angle));
+        const potentialEnergy = this.mass * this.gravity * height;
+        const kineticEnergy = 0.5 * this.mass * Math.pow(this.angularVelocity * this.length, 2);
+        return {
+          potential: potentialEnergy,
+          kinetic: kineticEnergy,
+          total: potentialEnergy + kineticEnergy,
+        };
+      }
     }
 
     const pendulum1 = new Pendulum(originX, originY, length, Math.PI / 4, ['blue', 'red'], mass);
@@ -96,12 +107,39 @@ function PendulumSimulation() {
     let draggingPendulum = null;
 
     function animate() {
+      drawEnergyGraph();
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       pendulum1.update();
       pendulum1.draw();
       pendulum2.update();
       pendulum2.draw();
+      
       requestAnimationFrame(animate);
+    }
+
+    function drawEnergyGraph() {
+      const energy1 = pendulum1.getEnergy();
+      const energy2 = pendulum2.getEnergy();
+      const energy = {
+        potential: energy1.potential + energy2.potential,
+        kinetic: energy1.kinetic + energy2.kinetic,
+        total: energy1.total + energy2.total,
+      };
+
+      const energyCanvas = document.getElementById('energyCanvas');
+      const energyCtx = energyCanvas.getContext('2d');
+      const maxEnergy = 50000; // Adjust as needed
+
+      energyCtx.clearRect(0, 0, energyCanvas.width, energyCanvas.height);
+
+      energyCtx.fillStyle = 'blue';
+      energyCtx.fillRect(10, energyCanvas.height - energy.potential / maxEnergy * energyCanvas.height, 50, energy.potential / maxEnergy * energyCanvas.height);
+
+      energyCtx.fillStyle = 'red';
+      energyCtx.fillRect(70, energyCanvas.height - energy.kinetic / maxEnergy * energyCanvas.height, 50, energy.kinetic / maxEnergy * energyCanvas.height);
+
+      energyCtx.fillStyle = 'green';
+      energyCtx.fillRect(130, energyCanvas.height - energy.total / maxEnergy * energyCanvas.height, 50, energy.total / maxEnergy * energyCanvas.height);
     }
 
     const handleMouseDown = (event) => {
@@ -149,6 +187,9 @@ function PendulumSimulation() {
 
   return (
     <div className="container">
+      <div className="left-panel">
+        <canvas id="energyCanvas" width="200" height={window.innerHeight}></canvas>
+      </div>
       <canvas ref={canvasRef} width={window.innerWidth - 300} height={window.innerHeight}></canvas>
       <div className="right-panel">
         <div className="controls-box">
@@ -209,5 +250,3 @@ function PendulumSimulation() {
 }
 
 export default PendulumSimulation;
-
-

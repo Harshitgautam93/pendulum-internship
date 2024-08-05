@@ -6,9 +6,6 @@ const App = () => {
   return (
     <div className="app-container">
       <div className="main-content">
-        <div className="controls-box">
-          {/* Your controls here */}
-        </div>
         <PendulumSimulation />
         <div>
         </div>

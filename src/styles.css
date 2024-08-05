@@ -10,7 +10,10 @@ body {
   height: 100vh;
 }
 
-
+canvas {
+  flex: 1;
+  border: 1px solid black;
+}
 
 .right-panel {
   width: 250px;
@@ -20,7 +23,7 @@ body {
   box-sizing: border-box;
 }
 
-
+.controls-box,
 .options-box {
   border: 1px solid #ccc;
   padding: 10px;
@@ -29,13 +32,21 @@ body {
   background-color: #f9f9f9;
 }
 
-
+.controls-box h2,
 .options-box h3 {
   margin-top: 0;
 }
 
-
+.controls-box label,
 .options-box label {
   display: block;
   margin-bottom: 5px;
+}
+
+.left-panel {
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  box-sizing: border-box;
 }
