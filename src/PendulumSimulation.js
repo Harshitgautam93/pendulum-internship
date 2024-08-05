@@ -107,13 +107,12 @@ function PendulumSimulation() {
     let draggingPendulum = null;
 
     function animate() {
-      drawEnergyGraph();
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       pendulum1.update();
       pendulum1.draw();
       pendulum2.update();
       pendulum2.draw();
-      
+      drawEnergyGraph();
       requestAnimationFrame(animate);
     }
 
@@ -128,7 +127,7 @@ function PendulumSimulation() {
 
       const energyCanvas = document.getElementById('energyCanvas');
       const energyCtx = energyCanvas.getContext('2d');
-      const maxEnergy = 50000; // Adjust as needed
+      const maxEnergy = 5000; // Adjust as needed
 
       energyCtx.clearRect(0, 0, energyCanvas.width, energyCanvas.height);
 
@@ -188,9 +187,9 @@ function PendulumSimulation() {
   return (
     <div className="container">
       <div className="left-panel">
-        <canvas id="energyCanvas" width="200" height={window.innerHeight}></canvas>
+        <canvas id="energyCanvas" width="200" height="300"></canvas> {/* Adjusted height */}
       </div>
-      <canvas ref={canvasRef} width={window.innerWidth - 300} height={window.innerHeight}></canvas>
+      <canvas ref={canvasRef} width={window.innerWidth - 500} height={window.innerHeight}></canvas>
       <div className="right-panel">
         <div className="controls-box">
           <h2>Controls</h2>
