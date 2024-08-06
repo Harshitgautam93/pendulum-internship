@@ -24,15 +24,77 @@ body {
   padding: 10px;
 }
 
-.controls-box, .options-box {
+.controls-box{
   background: #fff;
   border: 1px solid #ccc;
   padding: 10px;
   margin-bottom: 10px;
   width: 90%;
+  height: 50%;
 }
-
+.options-box{
+  background: #fff;
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin-bottom: 10px;
+  width: 90%;
+  height: 20%;
+}
 canvas {
   background: #fafafa;
   border: 1px solid #ccc;
 }
+.container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: relative;
+  height: 100vh;
+}
+
+
+
+canvas {
+  background: hwb(0 94% 5%);
+}
+
+
+
+.canvas-container {
+  position: relative;
+  flex: 1;
+}
+
+.canvas-container canvas {
+  display: block;
+}
+
+.button-container {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+}
+
+.circular-button {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: none;
+  background-color: #777a7e;
+  color: white;
+  font-size: 30px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.circular-button:hover {
+  background-color: #e9ecf0;
+}
+

@@ -8,6 +8,13 @@ function PendulumSimulation() {
   const [airResistance, setAirResistance] = useState(true);
   const [freeBodyDiagram, setFreeBodyDiagram] = useState(false);
   const [values, setValues] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [swingSpeed, setSwingSpeed] = useState(1);
+  const [pendulum1Active, setPendulum1Active] = useState(true);
+  const [pendulum2Active, setPendulum2Active] = useState(true);
+
+  const pendulum1Ref = useRef(null);
+  const pendulum2Ref = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -29,12 +36,13 @@ function PendulumSimulation() {
         this.colors = colors;
         this.colorIndex = 0;
         this.mass = mass;
+        this.initialAngle = angle; // Store initial angle for reset
       }
 
       update() {
-        if (!this.isDragging) {
+        if (!this.isDragging && isAnimating) {
           this.angularAcceleration = (-this.gravity / this.length) * Math.sin(this.angle);
-          this.angularVelocity += this.angularAcceleration;
+          this.angularVelocity += this.angularAcceleration * swingSpeed;
           this.angularVelocity *= this.damping;
           this.angle += this.angularVelocity;
         }
@@ -90,6 +98,12 @@ function PendulumSimulation() {
         this.mass = mass;
       }
 
+      reset() {
+        this.angle = this.initialAngle; // Reset to initial angle
+        this.angularVelocity = 0;
+        this.damping = airResistance ? 0.995 : 1;
+      }
+
       getEnergy() {
         const height = this.length * (1 - Math.cos(this.angle));
         const potentialEnergy = this.mass * this.gravity * height;
@@ -102,23 +116,70 @@ function PendulumSimulation() {
       }
     }
 
-    const pendulum1 = new Pendulum(originX, originY, length, Math.PI / 4, ['blue', 'red'], mass);
-    const pendulum2 = new Pendulum(originX, originY, length, Math.PI / 6, ['yellow', 'red'], mass);
+    const pendulum1 = new Pendulum(originX, originY, length, 0, ['blue', 'red'], mass);
+    const pendulum2 = new Pendulum(originX, originY, length, 0, ['yellow', 'red'], mass);
+
+    pendulum1Ref.current = pendulum1;
+    pendulum2Ref.current = pendulum2;
+
     let draggingPendulum = null;
 
     function animate() {
+      if (!isAnimating) return;
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      pendulum1.update();
-      pendulum1.draw();
-      pendulum2.update();
-      pendulum2.draw();
+      drawHalfMoonScale(); // Draw the half-moon scale
+      if (pendulum1Active) {
+        pendulum1Ref.current.update();
+        pendulum1Ref.current.draw();
+      }
+      if (pendulum2Active) {
+        pendulum2Ref.current.update();
+        pendulum2Ref.current.draw();
+      }
       drawEnergyGraph();
       requestAnimationFrame(animate);
     }
 
+    function drawHalfMoonScale() {
+      const radius = 100; // Radius of the half-moon scale
+      const centerX = originX ;
+     // Position the center of the scale at the radius height
+      const originYCir = 5;
+
+      ctx.beginPath();
+      ctx.arc(centerX, originYCir, radius, Math.PI, 0, true); // Draw half-moon
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Draw the scale markings and labels
+      for (let i = 0; i <= 180; i += 10) {
+        const angle = (i * Math.PI) / 180;
+        const xStart = centerX + radius * Math.cos(angle);
+        const yStart = originYCir + radius * Math.sin(angle);
+        const xEnd = centerX + (radius - 10) * Math.cos(angle);
+        const yEnd = originYCir + (radius - 10) * Math.sin(angle);
+
+        ctx.beginPath();
+        ctx.moveTo(xStart, yStart);
+        ctx.lineTo(xEnd, yEnd);
+        ctx.stroke();
+
+        // Draw the labels
+        if (i % 30 === 0) {
+          ctx.font = '12px Arial';
+          ctx.fillStyle = 'black';
+          const labelX = centerX + (radius - 20) * Math.cos(angle);
+          const labelY = originYCir + (radius - 20) * Math.sin(angle);
+          ctx.fillText(i.toString(), labelX - 5, labelY + 5);
+        }
+      }
+    }
+
     function drawEnergyGraph() {
-      const energy1 = pendulum1.getEnergy();
-      const energy2 = pendulum2.getEnergy();
+      const energy1 = pendulum1Active ? pendulum1Ref.current.getEnergy() : { potential: 0, kinetic: 0, total: 0 };
+      const energy2 = pendulum2Active ? pendulum2Ref.current.getEnergy() : { potential: 0, kinetic: 0, total: 0 };
       const energy = {
         potential: energy1.potential + energy2.potential,
         kinetic: energy1.kinetic + energy2.kinetic,
@@ -145,23 +206,21 @@ function PendulumSimulation() {
       const mouseX = event.clientX - canvas.getBoundingClientRect().left;
       const mouseY = event.clientY - canvas.getBoundingClientRect().top;
 
-      if (pendulum1.isMouseOnBob(mouseX, mouseY)) {
-        draggingPendulum = pendulum1;
-        pendulum1.isDragging = true;
-        pendulum1.changeColor();
-      } else if (pendulum2.isMouseOnBob(mouseX, mouseY)) {
-        draggingPendulum = pendulum2;
-        pendulum2.isDragging = true;
-        pendulum2.changeColor();
+      if (pendulum1Active && pendulum1Ref.current.isMouseOnBob(mouseX, mouseY)) {
+        draggingPendulum = pendulum1Ref.current;
+        draggingPendulum.isDragging = true;
+      } else if (pendulum2Active && pendulum2Ref.current.isMouseOnBob(mouseX, mouseY)) {
+        draggingPendulum = pendulum2Ref.current;
+        draggingPendulum.isDragging = true;
       }
     };
 
     const handleMouseMove = (event) => {
-      if (draggingPendulum) {
-        const mouseX = event.clientX - canvas.getBoundingClientRect().left;
-        const mouseY = event.clientY - canvas.getBoundingClientRect().top;
-        draggingPendulum.setAngleFromMouse(mouseX, mouseY);
-      }
+      if (!draggingPendulum) return;
+
+      const mouseX = event.clientX - canvas.getBoundingClientRect().left;
+      const mouseY = event.clientY - canvas.getBoundingClientRect().top;
+      draggingPendulum.setAngleFromMouse(mouseX, mouseY);
     };
 
     const handleMouseUp = () => {
@@ -182,14 +241,54 @@ function PendulumSimulation() {
       canvas.removeEventListener('mousemove', handleMouseMove);
       canvas.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [length, mass, airResistance]);
+  }, [length, mass, airResistance, freeBodyDiagram, values, isAnimating, swingSpeed, pendulum1Active, pendulum2Active]);
+
+  const handlePlayPauseClick = () => {
+    setIsAnimating(prev => !prev);
+  };
+
+  const handleRestartClick = () => {
+    setIsAnimating(false); // Stop the animation
+    // Reset pendulum properties
+    if (pendulum1Ref.current) pendulum1Ref.current.reset();
+    if (pendulum2Ref.current) pendulum2Ref.current.reset();
+    setLength(300);
+    setMass(20);
+    setSwingSpeed(1);
+    // Bring pendulums to mean position
+    setTimeout(() => {
+      setIsAnimating(true); // Restart the animation
+    }, 100); // Delay to ensure state is reset
+  };
+
+  const handleSpeedClick = () => {
+    if (isAnimating) {
+      setSwingSpeed(prevSpeed => prevSpeed * 1.5); // Increase speed by 50%
+    }
+  };
+
+  const handleRemovePendulumClick = () => {
+    if (pendulum1Active && pendulum2Active) {
+      setPendulum2Active(false); // Remove pendulum2
+    } else if (pendulum1Active) {
+      setPendulum1Active(false); // Remove pendulum1
+    }
+  };
 
   return (
     <div className="container">
       <div className="left-panel">
-        <canvas id="energyCanvas" width="200" height="300"></canvas> {/* Adjusted height */}
+        <canvas id="energyCanvas" width="200" height="300"></canvas>
       </div>
-      <canvas ref={canvasRef} width={window.innerWidth - 500} height={window.innerHeight}></canvas>
+      <div className="canvas-container">
+        <canvas ref={canvasRef} width={window.innerWidth - 500} height={window.innerHeight}></canvas>
+        <div className="button-container">
+          <button className="circular-button" onClick={handlePlayPauseClick}>{isAnimating ? '⏸️' : '▶️'}</button>
+          <button className="circular-button" onClick={handleRestartClick}>🔄</button>
+          <button className="circular-button" onClick={handleSpeedClick}>2x</button>
+          <button className="circular-button" onClick={handleRemovePendulumClick}>🔽</button> {/* New button */}
+        </div>
+      </div>
       <div className="right-panel">
         <div className="controls-box">
           <h2>Controls</h2>
@@ -226,6 +325,7 @@ function PendulumSimulation() {
             />
             Air Resistance
           </label>
+          <br/>
           <label>
             <input
               type="checkbox"
@@ -234,6 +334,7 @@ function PendulumSimulation() {
             />
             Freebody Diagram
           </label>
+          <br/>
           <label>
             <input
               type="checkbox"
