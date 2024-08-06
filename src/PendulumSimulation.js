@@ -3,13 +3,15 @@ import './styles.css';
 
 function PendulumSimulation() {
   const canvasRef = useRef(null);
-  const [length, setLength] = useState(300);
-  const [mass, setMass] = useState(20);
+  const [length1, setLength1] = useState(300);
+  const [mass1, setMass1] = useState(20);
+  const [length2, setLength2] = useState(300);
+  const [mass2, setMass2] = useState(20);
   const [airResistance, setAirResistance] = useState(true);
   const [freeBodyDiagram, setFreeBodyDiagram] = useState(false);
   const [values, setValues] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [swingSpeed, setSwingSpeed] = useState(1);
+  const [swingSpeed, setSwingSpeed] = useState(0.5); // Initialize speed to 0.5x
   const [pendulum1Active, setPendulum1Active] = useState(true);
   const [pendulum2Active, setPendulum2Active] = useState(true);
 
@@ -73,12 +75,10 @@ function PendulumSimulation() {
       }
 
       setAngleFromMouse(mouseX, mouseY) {
-        // Calculate the angle of the line between the origin and the mouse position
         const dx = mouseX - this.originX;
         const dy = mouseY - this.originY;
         const newAngle = Math.atan2(dy, dx);
       
-        // Update the angle of the pendulum bob to follow the mouse direction
         this.angle = Math.PI / 2 - newAngle; // Adjust for correct alignment
         this.angularVelocity = 0;
       }
@@ -120,8 +120,8 @@ function PendulumSimulation() {
       }
     }
 
-    const pendulum1 = new Pendulum(originX, originY, length, 0, ['blue', 'red'], mass);
-    const pendulum2 = new Pendulum(originX, originY, length, 0, ['yellow', 'red'], mass);
+    const pendulum1 = new Pendulum(originX, originY, length1, 0, ['blue', 'red'], mass1);
+    const pendulum2 = new Pendulum(originX, originY, length2, 0, ['yellow', 'red'], mass2);
 
     pendulum1Ref.current = pendulum1;
     pendulum2Ref.current = pendulum2;
@@ -147,8 +147,7 @@ function PendulumSimulation() {
 
     function drawHalfMoonScale() {
       const radius = 100; // Radius of the half-moon scale
-      const centerX = originX ;
-     // Position the center of the scale at the radius height
+      const centerX = originX;
       const originYCir = 5;
 
       ctx.beginPath();
@@ -157,7 +156,6 @@ function PendulumSimulation() {
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      // Draw the scale markings and labels
       for (let i = 0; i <= 180; i += 10) {
         const angle = (i * Math.PI) / 180;
         const xStart = centerX + radius * Math.cos(angle);
@@ -170,7 +168,6 @@ function PendulumSimulation() {
         ctx.lineTo(xEnd, yEnd);
         ctx.stroke();
 
-        // Draw the labels
         if (i % 30 === 0) {
           ctx.font = '12px Arial';
           ctx.fillStyle = 'black';
@@ -192,7 +189,7 @@ function PendulumSimulation() {
 
       const energyCanvas = document.getElementById('energyCanvas');
       const energyCtx = energyCanvas.getContext('2d');
-      const maxEnergy = 5000; // Adjust as needed
+      const maxEnergy = 5000;
 
       energyCtx.clearRect(0, 0, energyCanvas.width, energyCanvas.height);
 
@@ -245,15 +242,13 @@ function PendulumSimulation() {
       canvas.removeEventListener('mousemove', handleMouseMove);
       canvas.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [length, mass, airResistance, freeBodyDiagram, values, isAnimating, swingSpeed, pendulum1Active, pendulum2Active]);
+  }, [length1, mass1, length2, mass2, airResistance, freeBodyDiagram, values, isAnimating, swingSpeed, pendulum1Active, pendulum2Active]);
 
   const handlePlayPauseClick = () => {
     setIsAnimating(prev => {
       if (!prev) {
-        // If starting animation, do nothing special
         return true;
       } else {
-        // If pausing animation, freeze pendulums
         if (pendulum1Ref.current) pendulum1Ref.current.angularVelocity = 0;
         if (pendulum2Ref.current) pendulum2Ref.current.angularVelocity = 0;
         return false;
@@ -263,30 +258,32 @@ function PendulumSimulation() {
   
 
   const handleRestartClick = () => {
-    setIsAnimating(false); // Stop the animation
-    // Reset pendulum properties
+    setIsAnimating(false);
     if (pendulum1Ref.current) pendulum1Ref.current.reset();
     if (pendulum2Ref.current) pendulum2Ref.current.reset();
-    setLength(300);
-    setMass(20);
-    setSwingSpeed(1);
-    // Bring pendulums to mean position
+    setLength1(300);
+    setMass1(20);
+    setLength2(300);
+    setMass2(20);
+    setSwingSpeed(0.5);
     setTimeout(() => {
-      setIsAnimating(true); // Restart the animation
-    }, 100); // Delay to ensure state is reset
+      setIsAnimating(true);
+    }, 100);
   };
 
   const handleSpeedClick = () => {
-    if (isAnimating) {
-      setSwingSpeed(prevSpeed => prevSpeed * 1.5); // Increase speed by 50%
-    }
+    setSwingSpeed(prevSpeed => {
+      if (prevSpeed === 0.5) return 1;
+      if (prevSpeed === 1) return 1.5;
+      return 0.5; // Cycle back to 0.5x
+    });
   };
 
   const handleRemovePendulumClick = () => {
     if (pendulum1Active && pendulum2Active) {
-      setPendulum2Active(false); // Remove pendulum2
+      setPendulum2Active(false);
     } else if (pendulum1Active) {
-      setPendulum1Active(false); // Remove pendulum1
+      setPendulum1Active(false);
     }
   };
 
@@ -300,33 +297,58 @@ function PendulumSimulation() {
         <div className="button-container">
           <button className="circular-button" onClick={handlePlayPauseClick}>{isAnimating ? '⏸️' : '▶️'}</button>
           <button className="circular-button" onClick={handleRestartClick}>🔄</button>
-          <button className="circular-button" onClick={handleSpeedClick}>2x</button>
-          <button className="circular-button" onClick={handleRemovePendulumClick}>🔽</button> {/* New button */}
+          <button className="circular-button" onClick={handleSpeedClick}>{swingSpeed === 0.5 ? '1x' : swingSpeed === 1 ? '1.5x' : '2x'}</button>
+          <button className="circular-button" onClick={handleRemovePendulumClick}>🔽</button>
         </div>
       </div>
       <div className="right-panel">
         <div className="controls-box">
-          <h2>Controls</h2>
+          <h2> Control P1</h2>
           <div>
-            <label htmlFor="lengthRange">Length:</label>
+            <label htmlFor="lengthRange1">Length:</label>
             <input
               type="range"
-              id="lengthRange"
+              id="lengthRange1"
               min="100"
               max="500"
-              value={length}
-              onChange={(e) => setLength(parseInt(e.target.value))}
+              value={length1}
+              onChange={(e) => setLength1(parseInt(e.target.value))}
             />
           </div>
           <div>
-            <label htmlFor="massRange">Mass:</label>
+            <label htmlFor="massRange1">Mass:</label>
             <input
               type="range"
-              id="massRange"
+              id="massRange1"
               min="10"
               max="50"
-              value={mass}
-              onChange={(e) => setMass(parseInt(e.target.value))}
+              value={mass1}
+              onChange={(e) => setMass1(parseInt(e.target.value))}
+            />
+          </div>
+        </div>
+        <div className="controls-box">
+          <h2> Control P2</h2>
+          <div>
+            <label htmlFor="lengthRange2">Length:</label>
+            <input
+              type="range"
+              id="lengthRange2"
+              min="100"
+              max="500"
+              value={length2}
+              onChange={(e) => setLength2(parseInt(e.target.value))}
+            />
+          </div>
+          <div>
+            <label htmlFor="massRange2">Mass:</label>
+            <input
+              type="range"
+              id="massRange2"
+              min="10"
+              max="50"
+              value={mass2}
+              onChange={(e) => setMass2(parseInt(e.target.value))}
             />
           </div>
         </div>
