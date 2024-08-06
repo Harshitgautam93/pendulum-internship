@@ -73,12 +73,16 @@ function PendulumSimulation() {
       }
 
       setAngleFromMouse(mouseX, mouseY) {
+        // Calculate the angle of the line between the origin and the mouse position
         const dx = mouseX - this.originX;
         const dy = mouseY - this.originY;
-        this.angle = Math.atan2(dy, dx);
+        const newAngle = Math.atan2(dy, dx);
+      
+        // Update the angle of the pendulum bob to follow the mouse direction
+        this.angle = Math.PI / 2 - newAngle; // Adjust for correct alignment
         this.angularVelocity = 0;
       }
-
+      
       isMouseOnBob(mouseX, mouseY) {
         const x = this.originX + this.length * Math.sin(this.angle);
         const y = this.originY + this.length * Math.cos(this.angle);
@@ -244,8 +248,19 @@ function PendulumSimulation() {
   }, [length, mass, airResistance, freeBodyDiagram, values, isAnimating, swingSpeed, pendulum1Active, pendulum2Active]);
 
   const handlePlayPauseClick = () => {
-    setIsAnimating(prev => !prev);
+    setIsAnimating(prev => {
+      if (!prev) {
+        // If starting animation, do nothing special
+        return true;
+      } else {
+        // If pausing animation, freeze pendulums
+        if (pendulum1Ref.current) pendulum1Ref.current.angularVelocity = 0;
+        if (pendulum2Ref.current) pendulum2Ref.current.angularVelocity = 0;
+        return false;
+      }
+    });
   };
+  
 
   const handleRestartClick = () => {
     setIsAnimating(false); // Stop the animation
